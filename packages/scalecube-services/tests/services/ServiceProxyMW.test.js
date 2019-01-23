@@ -1,16 +1,20 @@
 import GreetingService from "examples/GreetingServiceClass/GreetingService.js";
-import {Microservices} from "../../src/services";
+import { Microservices } from "../../src/services";
 import { Observable } from "rxjs";
+import { map } from "rxjs6/operators";
 
 describe("Service proxy middleware suite", () => {
     it("MW should add idan", () => {
         const greetingService = Microservices
             .builder()
             .preRequest((req$) => {
-                return req$.map( req => {
-                    req.message.data.push("Idan");
-                    return req;
-                });
+                console.log("req$", req$);
+                return req$.pipe(
+                    map(req => {
+                        req.message.data.push("Idan");
+                        return req;
+                    })
+                );
             })
             .services(new GreetingService(), new GreetingService())
             .build()
@@ -28,14 +32,16 @@ describe("Service proxy middleware suite", () => {
         const ms = Microservices
             .builder()
             .preRequest((message) => {
-                return message.map((msg=>{
-                    expect(msg.thisMs).toEqual(ms);
-                    expect(msg.meta).toEqual(GreetingService.meta);
-                    expect(msg.message.data).toEqual(["Idan"]);
-                    expect(msg.message.method).toEqual("hello");
-                    expect(msg.message.serviceName).toEqual("GreetingService");
-                    return msg;
-                }));
+                return message.pipe(
+                    map((msg => {
+                        expect(msg.thisMs).toEqual(ms);
+                        expect(msg.meta).toEqual(GreetingService.meta);
+                        expect(msg.message.data).toEqual(["Idan"]);
+                        expect(msg.message.method).toEqual("hello");
+                        expect(msg.message.serviceName).toEqual("GreetingService");
+                        return msg;
+                    }))
+                );
             })
             .services(new GreetingService(), new GreetingService())
             .build();
